@@ -406,6 +406,150 @@ func TestCRDAsUnstructured(t *testing.T) {
 				},
 			},
 		},
+		"MRDWithLabelsAndAnnotations": {
+			reason: "Should propagate labels and annotations from MRD to CRD",
+			args: args{
+				mrd: &v1alpha1.ManagedResourceDefinition{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "databases.example.com",
+						UID:  types.UID(mrdUID),
+						Labels: map[string]string{
+							"app.kubernetes.io/managed-by": "crossplane",
+							"pkg.crossplane.io/package":    "provider-example",
+						},
+						Annotations: map[string]string{
+							"example.com/team": "platform",
+						},
+					},
+					Spec: v1alpha1.ManagedResourceDefinitionSpec{
+						CustomResourceDefinitionSpec: v1alpha1.CustomResourceDefinitionSpec{
+							Group: "example.com",
+							Names: extv1.CustomResourceDefinitionNames{
+								Kind:   "Database",
+								Plural: "databases",
+							},
+							Scope: extv1.ClusterScoped,
+							Versions: []v1alpha1.CustomResourceDefinitionVersion{
+								{
+									Name:    "v1",
+									Served:  true,
+									Storage: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				crd: &unstructured.Unstructured{
+					Object: map[string]any{
+						"apiVersion": "apiextensions.k8s.io/v1",
+						"kind":       "CustomResourceDefinition",
+						"metadata": map[string]any{
+							"name": "databases.example.com",
+							"labels": map[string]any{
+								"app.kubernetes.io/managed-by": "crossplane",
+								"pkg.crossplane.io/package":    "provider-example",
+							},
+							"annotations": map[string]any{
+								"example.com/team": "platform",
+							},
+							"ownerReferences": []any{
+								map[string]any{
+									"apiVersion": "apiextensions.crossplane.io/v1alpha1",
+									"kind":       "ManagedResourceDefinition",
+									"name":       "databases.example.com",
+									"uid":        mrdUID,
+								},
+							},
+						},
+						"spec": map[string]any{
+							"group": "example.com",
+							"names": map[string]any{
+								"kind":   "Database",
+								"plural": "databases",
+							},
+							"scope": "Cluster",
+							"versions": []any{
+								map[string]any{
+									"name":    "v1",
+									"served":  true,
+									"storage": true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"MRDWithOnlyLabels": {
+			reason: "Should propagate labels without annotations",
+			args: args{
+				mrd: &v1alpha1.ManagedResourceDefinition{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "databases.example.com",
+						UID:  types.UID(mrdUID),
+						Labels: map[string]string{
+							"app.kubernetes.io/managed-by": "crossplane",
+						},
+					},
+					Spec: v1alpha1.ManagedResourceDefinitionSpec{
+						CustomResourceDefinitionSpec: v1alpha1.CustomResourceDefinitionSpec{
+							Group: "example.com",
+							Names: extv1.CustomResourceDefinitionNames{
+								Kind:   "Database",
+								Plural: "databases",
+							},
+							Scope: extv1.ClusterScoped,
+							Versions: []v1alpha1.CustomResourceDefinitionVersion{
+								{
+									Name:    "v1",
+									Served:  true,
+									Storage: true,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: want{
+				crd: &unstructured.Unstructured{
+					Object: map[string]any{
+						"apiVersion": "apiextensions.k8s.io/v1",
+						"kind":       "CustomResourceDefinition",
+						"metadata": map[string]any{
+							"name": "databases.example.com",
+							"labels": map[string]any{
+								"app.kubernetes.io/managed-by": "crossplane",
+							},
+							"ownerReferences": []any{
+								map[string]any{
+									"apiVersion": "apiextensions.crossplane.io/v1alpha1",
+									"kind":       "ManagedResourceDefinition",
+									"name":       "databases.example.com",
+									"uid":        mrdUID,
+								},
+							},
+						},
+						"spec": map[string]any{
+							"group": "example.com",
+							"names": map[string]any{
+								"kind":   "Database",
+								"plural": "databases",
+							},
+							"scope": "Cluster",
+							"versions": []any{
+								map[string]any{
+									"name":    "v1",
+									"served":  true,
+									"storage": true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 		"InvalidSchema": {
 			reason: "Should return error for invalid JSON schema",
 			args: args{

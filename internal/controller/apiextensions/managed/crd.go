@@ -95,6 +95,14 @@ func CRDAsUnstructured(mrd *v1alpha1.ManagedResourceDefinition) (*unstructured.U
 	// Build the Unstructured from the Paved content
 	u := &unstructured.Unstructured{Object: p.UnstructuredContent()}
 
+	// Propagate labels and annotations from the MRD to the CRD.
+	if labels := mrd.GetLabels(); len(labels) > 0 {
+		u.SetLabels(labels)
+	}
+	if annotations := mrd.GetAnnotations(); len(annotations) > 0 {
+		u.SetAnnotations(annotations)
+	}
+
 	// Add owner references
 	meta.AddOwnerReference(u, meta.AsOwner(meta.TypedReferenceTo(mrd, v1alpha1.ManagedResourceDefinitionGroupVersionKind)))
 	if owner := metav1.GetControllerOf(mrd); owner != nil {
